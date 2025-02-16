@@ -1,0 +1,98 @@
+local Players = game:GetService("Players")
+local ServerStorage = game:GetService("ServerStorage")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local CombatTable = require(script:FindFirstChild("CombatTable"))
+local HitboxModule = require(script:WaitForChild("HitboxModule"))
+
+local MAX_COMBO = 3
+local Combo = 1
+local resetingCombo = false
+
+local module = {}
+
+local function resetCombo(player, hum)
+	local CombatData = CombatTable.GetCombatData(hum)
+	resetingCombo = true
+	hum.WalkSpeed = 8
+	task.wait(3)
+	hum.WalkSpeed = 16
+	CombatData.Combo = 1
+	resetingCombo = false
+end
+
+local function Hit(shapecast, Dmg, combo)
+	local part = shapecast.Instance.Parent
+	if part.ClassName ~= "Model" then return end
+	print(part.Name)
+	local humanoid:Humanoid? = part:WaitForChild("Humanoid")
+	local enemyData = CombatTable.GetCombatData(humanoid)
+	if humanoid then
+		if enemyData.Blocking then return end
+		humanoid:TakeDamage(Dmg)
+		if combo == MAX_COMBO then
+			local RootPart:Part = humanoid.Parent:WaitForChild("HumanoidRootPart")
+			if RootPart then
+				local BodyVelocity = Instance.new("BodyVelocity")
+				BodyVelocity.Parent = RootPart
+				BodyVelocity.MaxForce = Vector3.new(1,1,1)*math.huge
+				BodyVelocity.Velocity = -RootPart.CFrame.LookVector*50
+				game.Debris:AddItem(BodyVelocity, 0.1)
+			end
+		end
+	end
+end
+
+function module.Block(player, toggle)
+	local char = player.Character
+	local hum = char:FindFirstChild("Humanoid")
+	local CombatData = CombatTable.GetCombatData(hum)
+		
+	if toggle then
+		CombatData.Blocking = true
+		print("block")
+	else
+		CombatData.Blocking = false
+		print("stop block")
+	end
+end
+
+function module.Attack(player:Player, inputState)
+	local char = player.Character
+	local Hum = char:FindFirstChild("Humanoid")
+	local CombatData = CombatTable.GetCombatData(Hum)
+
+	local Stunned = CombatData.Stunned
+	local Dmg = CombatData.Damage
+
+	local RootPart:Part = Hum.RootPart
+	local Animator:Animator = Hum:FindFirstChild("Animator")
+	--local AnimTable = PunchAnims:GetChildren()
+
+	if inputState == Enum.UserInputState.End then
+		if CombatData.Combo == MAX_COMBO then
+			return nil
+		elseif CombatData.Combo == 1 or CombatData.Combo == 2 then
+			if CombatData.Blocking then return end
+			CombatData.Combo += 1
+		end
+		if CombatData.Combo ~= MAX_COMBO then
+			CombatData.Attacking = true
+		end
+		print(CombatData.Combo)
+		if CombatData.Attacking then
+			local direction = RootPart.CFrame.LookVector
+			local shapecast = HitboxModule.CreateHitbox(RootPart, direction, CombatData.Range, {char})
+			
+			if shapecast then
+				print(shapecast)
+				Hit(shapecast, Dmg, CombatData.Combo)
+			end
+			if CombatData.Combo == MAX_COMBO then
+				resetCombo(player, Hum)
+			end
+		end
+	end
+end
+
+return module
