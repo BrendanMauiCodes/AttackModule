@@ -1,0 +1,49 @@
+local Players = game:GetService("Players")
+local module = {}
+local AllCombatData = {}
+
+function module.GetCombatData(hum)
+	local CombatData = AllCombatData[hum]
+	return CombatData
+end
+
+for _, char in pairs(workspace:GetChildren()) do
+	if char:FindFirstChild("Humanoid") then
+		print(char)
+		local hum = char:FindFirstChild("Humanoid")
+		local NpcCombatData = {
+			Attacking = nil, 
+			Stunned = nil, 
+			Damage = 4,
+			Combo = 1,
+			Range = 5,
+			Blocking = false,
+		}
+		AllCombatData[hum] = NpcCombatData
+	end
+end
+
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Wait()
+	local char = player.Character
+	local hum = char:FindFirstChild("Humanoid")
+	local CombatData = {
+		Attacking = nil, 
+		Stunned = nil, 
+		Damage = 4,
+		Combo = 1,
+		Range = 5,
+		Blocking = false,
+	}
+	AllCombatData[hum] = CombatData
+end)
+
+workspace.ChildRemoved:Connect(function(child)
+	local hum = child:FindFirstChild("Humanoid")
+	if hum then
+		AllCombatData[hum] = {}
+	end
+	print("Cleared Table")
+end)
+
+return module
