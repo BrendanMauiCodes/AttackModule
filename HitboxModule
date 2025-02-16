@@ -1,0 +1,15 @@
+local module = {}
+
+function module.CreateHitbox(orgin, dir, Range, IgnoreList)
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+	raycastParams.FilterDescendantsInstances = IgnoreList
+	raycastParams.IgnoreWater = true
+	raycastParams.BruteForceAllSlow = false
+	raycastParams.RespectCanCollide = false
+	
+	local shapecast = workspace:Shapecast(orgin, dir * Range, raycastParams)
+	return shapecast
+end
+
+return module
